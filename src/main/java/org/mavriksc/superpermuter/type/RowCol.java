@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class XY {
-    private int x;
-    private int y;
+public class RowCol {
+    private int row;
+    private int col;
 }

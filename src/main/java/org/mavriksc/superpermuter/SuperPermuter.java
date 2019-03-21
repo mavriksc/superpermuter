@@ -1,6 +1,6 @@
 package org.mavriksc.superpermuter;
 
-import org.mavriksc.superpermuter.type.XY;
+import org.mavriksc.superpermuter.type.RowCol;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,15 +15,32 @@ public class SuperPermuter {
 
     private static List<String> source = asList("A", "B", "C", "D", "E");
     private static int N = source.size();
-    static private Map<String, XY> lookup = new HashMap<>();
+    private static Map<String, RowCol> lookup = new HashMap<>();
+    private static int COLS = 0;
+    private static String[][] permutations = permutationsViaRotation(source);
 
 
-
-    public static void main(String[] args){
-        String[][] permutations = permutationsViaRotation(source);
-
+    public static void main(String[] args) {
         outputPerm2DArray(permutations);
+        String  one = stringToAppendColAtRowWithOverlap(new RowCol(0,0),0);
+        System.out.println(one);
+        String next = one.substring(one.length()-N);
+        next = next.substring(N-(N-2))+reverse(next.substring(0,2));
+        one += stringToAppendColAtRowWithOverlap(lookup.get(next),N-2);
+        System.out.println(one);
+    }
 
+    private static String reverse(String s){
+        return new StringBuilder(s).reverse().toString();
+    }
+
+    private static void generateSuperPermutations(String[][] permutations) {
+
+
+    }
+
+    private static String stringToAppendColAtRowWithOverlap(RowCol rc, int overlap) {
+        return (permutations[rc.getRow()][rc.getCol()] + permutations[(rc.getRow() + 1) % N][rc.getCol()].substring(1)).substring(overlap);
     }
 
     private static List<String> returnPermutations(List<String> source, int choose, int len) {
@@ -54,7 +71,7 @@ public class SuperPermuter {
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < row1.size(); j++) {
                 perms[i][j] = i == 0 ? row1.get(j) : rotateStringRight(perms[i - 1][j]);
-                lookup.put(perms[i][j],new XY(i,j));
+                lookup.put(perms[i][j], new RowCol(i, j));
             }
         }
         return perms;
@@ -67,10 +84,10 @@ public class SuperPermuter {
         }
     }
 
-    private static String rotateStringRight(String s){
+    private static String rotateStringRight(String s) {
         if (s == null || s.length() == 1) return s;
         else {
-            return s.substring(s.length()-1) + s.substring(0, s.length()-1);
+            return s.substring(s.length() - 1) + s.substring(0, s.length() - 1);
         }
     }
 
@@ -85,7 +102,7 @@ public class SuperPermuter {
     }
 
     private static boolean isSuperPermutation(String symbols, String guess) {
-        return isSuperPermutation(Arrays.asList(symbols.split("")),guess);
+        return isSuperPermutation(Arrays.asList(symbols.split("")), guess);
     }
 
     private static void outputPerm2DArray(String[][] permutations) {
@@ -98,5 +115,10 @@ public class SuperPermuter {
         }
         System.out.println(sb.toString());
     }
-    
+
+    private static void printLocationMap() {
+        StringBuilder sb = new StringBuilder();
+        lookup.forEach((k, v) -> sb.append(k).append("\t").append(v).append("\n"));
+        System.out.println(sb.toString());
+    }
 }

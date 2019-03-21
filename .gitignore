@@ -19,3 +19,4 @@ gradle-app.setting
 /.idea/vcs.xml
 /.idea/workspace.xml
 .idea
+/out/production/classes/org/mavriksc/superpermuter

@@ -1,46 +1,87 @@
 package org.mavriksc.superpermuter;
 
+import org.mavriksc.superpermuter.type.Move;
 import org.mavriksc.superpermuter.type.RowCol;
+import org.mavriksc.superpermuter.util.FileWriter;
 
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.util.Arrays.asList;
 
 public class SuperPermuter {
 
-    private static List<String> source = asList("A", "B", "C", "D", "E");
+    private static List<String> source = asList("A", "B", "C" , "D", "E");
     private static int N = source.size();
     private static Map<String, RowCol> lookup = new HashMap<>();
     private static int COLS = 0;
     private static String[][] permutations = permutationsViaRotation(source);
+    private static int maxOverlap = Math.max(N - 2, 1);
+    private static int minSuperLen = Integer.MAX_VALUE;
 
 
     public static void main(String[] args) {
         outputPerm2DArray(permutations);
-        String  one = stringToAppendColAtRowWithOverlap(new RowCol(0,0),0);
-        System.out.println(one);
-        String next = one.substring(one.length()-N);
-        next = next.substring(N-(N-2))+reverse(next.substring(0,2));
-        one += stringToAppendColAtRowWithOverlap(lookup.get(next),N-2);
-        System.out.println(one);
+        List<Integer> usedCols = new ArrayList<>();
+        recursePathFind("",new Move(new RowCol(0,0),0),usedCols);
     }
 
-    private static String reverse(String s){
-        return new StringBuilder(s).reverse().toString();
+
+    private static void recursePathFind(String soFar, Move m, List<Integer> usedCols) {
+        usedCols.add(m.getRowCol().getCol());
+        soFar += stringToAppendColAtRowWithOverlap(m.getRowCol(), m.getOverlap());
+        if (usedCols.size() < permutations[0].length) {
+            //still more work
+            for (int i = maxOverlap; i > 0; i--) {
+                String finalSoFar = soFar;
+                getMoves(soFar, i)
+                        .parallelStream()
+                        .filter(m1 -> !usedCols.contains(m1.getRowCol().getCol()))
+                        .forEach(move -> recursePathFind(finalSoFar, move, new ArrayList<>(usedCols)));
+            }
+        } else {
+            if (soFar.length() <= minSuperLen) {
+                System.out.println("Found new BEST or TIE!!!\n\t"+soFar.length()+" - " + soFar);
+                minSuperLen = soFar.length();
+                saveSuper(soFar);
+            }
+        }
     }
 
-    private static void generateSuperPermutations(String[][] permutations) {
+    private static void saveSuper(String superPermutationMF) {
 
+        String path = "./" + N;
+        String fileName = "" + superPermutationMF.length() + "-" + UUID.randomUUID() + ".txt";
+        FileWriter.write(path, fileName, Collections.singletonList(superPermutationMF));
 
+    }
+
+    private static List<Move> getMoves(String current, int overlap) {
+        String end = current.substring(current.length() - N);
+        String pre = end.substring(N - overlap);
+        String tail = end.substring(0, N - overlap);
+        return returnPermutations(tail).stream().filter(s -> !s.equals(tail)).map(ts -> new Move(lookup.get(pre + ts), overlap))
+                .collect(Collectors.toList());
     }
 
     private static String stringToAppendColAtRowWithOverlap(RowCol rc, int overlap) {
         return (permutations[rc.getRow()][rc.getCol()] + permutations[(rc.getRow() + 1) % N][rc.getCol()].substring(1)).substring(overlap);
+    }
+
+    private static List<String> returnPermutations(String s) {
+        return returnPermutations(Arrays.asList(s.split("")), s.length(), 0);
     }
 
     private static List<String> returnPermutations(List<String> source, int choose, int len) {
@@ -120,5 +161,9 @@ public class SuperPermuter {
         StringBuilder sb = new StringBuilder();
         lookup.forEach((k, v) -> sb.append(k).append("\t").append(v).append("\n"));
         System.out.println(sb.toString());
+    }
+
+    private static String reverse(String s) {
+        return new StringBuilder(s).reverse().toString();
     }
 }

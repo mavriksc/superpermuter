@@ -30,22 +30,19 @@ public class SuperPermuter {
     private static String[][] permutations = permutationsViaRotation(source);
     private static int maxOverlap = Math.max(N - 2, 1);
     private static int minSuperLen = Integer.MAX_VALUE;
+    private static int minMergeCount = 0;
 
 
     public static void main(String[] args) {
         outputPerm2DArray(permutations);
         List<Integer> usedCols = new ArrayList<>();
-        recursePathFind("", new Move(new RowCol(0, 0), 0), usedCols);
+        recursePathFindOptimized("", new Move(new RowCol(0, 0), 0), usedCols);
     }
 
 
     private static void recursePathFind(String soFar, Move m, List<Integer> usedCols) {
         usedCols.add(m.getRowCol().getCol());
         soFar += stringToAppendColAtRowWithOverlap(m.getRowCol(), m.getOverlap());
-        recursePathFindbase(soFar, usedCols);
-    }
-
-    private static void recursePathFindbase(String soFar, List<Integer> usedCols) {
         if (usedCols.size() < permutations[0].length) {
             //still more work
             for (int i = maxOverlap; i > 0; i--) {
@@ -56,32 +53,74 @@ public class SuperPermuter {
                         .forEach(move -> recursePathFind(finalSoFar, move, new ArrayList<>(usedCols)));
             }
         } else {
-            if (soFar.length() < minSuperLen) {
-                System.out.println("Found new BEST !!!\n\t" + soFar.length() + " - " + soFar);
-                minSuperLen = soFar.length();
-                saveSuper(soFar);
-            } else if (soFar.length() <= minSuperLen) {
-                System.out.println("Found new BEST or TIE!!!\n\t" + soFar.length() + " - " + soFar);
-                saveSuper(soFar);
+            outputNewSuperOrSkip(soFar);
+        }
+    }
+
+
+    private static void recursePathFindOptimizedMaxMinMerge(String soFar, Move m, List<Integer> usedCols) {
+        usedCols.add(m.getRowCol().getCol());
+        soFar += stringToAppendColAtRowWithOverlap(m.getRowCol(), m.getOverlap());
+        if (minMergeCount <= 5) {
+            //possible to still beat current record.
+            //else : do nothing quit wasting time end search on this branch.
+            if (usedCols.size() < permutations[0].length) {
+                //still more work
+                for (int i = maxOverlap; i > 0; i--) {
+                    if (i == 1) {
+                        minMergeCount++;
+                    }
+                    String finalSoFar = soFar;
+                    getMoves(soFar, i)
+                            .parallelStream()
+                            .filter(m1 -> !usedCols.contains(m1.getRowCol().getCol()))
+                            .forEach(move -> recursePathFindOptimizedMaxMinMerge(finalSoFar, move, new ArrayList<>(usedCols)));
+                }
+            } else {
+                outputNewSuperOrSkip(soFar);
             }
         }
     }
 
     private static void recursePathFindOptimized(String soFar, Move m, List<Integer> usedCols) {
-        //TODO: FIX THIS
         usedCols.add(m.getRowCol().getCol());
         soFar += stringToAppendColAtRowWithOverlap(m.getRowCol(), m.getOverlap());
         if (soFar.length() + maxPackedRemainingLength(usedCols) <= minSuperLen) {
             //possible to still beat current record.
             //else : do nothing quit wasting time end search on this branch.
-            recursePathFindbase(soFar, usedCols);
+            if (usedCols.size() < permutations[0].length) {
+                //still more work
+                for (int i = maxOverlap; i > 0; i--) {
+                    String finalSoFar = soFar;
+                    getMoves(soFar, i)
+                            .parallelStream()
+                            .filter(m1 -> !usedCols.contains(m1.getRowCol().getCol()))
+                            .forEach(move -> recursePathFindOptimized(finalSoFar, move, new ArrayList<>(usedCols)));
+                }
+            } else {
+                outputNewSuperOrSkip(soFar);
+            }
+        }
+    }
+
+    private static void outputNewSuperOrSkip(String soFar) {
+        if (soFar.length() < minSuperLen) {
+            System.out.println("Found new BEST !!!\n\t" + soFar.length() + " - " + soFar);
+            minSuperLen = soFar.length();
+            saveSuper(soFar);
+        } else if (soFar.length() <= minSuperLen) {
+            System.out.println("Found new TIE!!!\n\t" + soFar.length() + " - " + soFar);
+            saveSuper(soFar);
         }
     }
 
     private static int maxPackedRemainingLength(List<Integer> usedCols) {
         int unusedCols = permutations[0].length - usedCols.size();
         int maxPackColLen = N + N - 1;
-        return maxPackColLen + (maxPackColLen - maxOverlap) * (unusedCols - 1);
+        // try to set bounds but this is fuzzy
+        int overlapGuestimate = maxOverlap < 2 ? maxOverlap : 2;
+        int overlapOffset = 15;
+        return (maxPackColLen + (maxPackColLen - overlapGuestimate) * (unusedCols - 1)) - overlapOffset;
     }
 
     private static void saveSuper(String superPermutationMF) {

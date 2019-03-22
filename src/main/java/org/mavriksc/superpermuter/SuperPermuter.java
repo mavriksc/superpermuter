@@ -30,13 +30,12 @@ public class SuperPermuter {
     private static String[][] permutations = permutationsViaRotation(source);
     private static int maxOverlap = Math.max(N - 2, 1);
     private static int minSuperLen = Integer.MAX_VALUE;
-    private static int minMergeCount = 0;
 
 
     public static void main(String[] args) {
         outputPerm2DArray(permutations);
         List<Integer> usedCols = new ArrayList<>();
-        recursePathFindOptimized("", new Move(new RowCol(0, 0), 0), usedCols);
+        recursePathFindOptimizedMaxMinMerge("", new Move(new RowCol(0, 0), 0), usedCols, 0);
     }
 
 
@@ -57,11 +56,10 @@ public class SuperPermuter {
         }
     }
 
-
-    private static void recursePathFindOptimizedMaxMinMerge(String soFar, Move m, List<Integer> usedCols) {
+    private static void recursePathFindOptimizedMaxMinMerge(String soFar, Move m, List<Integer> usedCols, int minMergeCount) {
         usedCols.add(m.getRowCol().getCol());
         soFar += stringToAppendColAtRowWithOverlap(m.getRowCol(), m.getOverlap());
-        if (minMergeCount <= 5) {
+        if (minMergeCount <= 3) {
             //possible to still beat current record.
             //else : do nothing quit wasting time end search on this branch.
             if (usedCols.size() < permutations[0].length) {
@@ -71,10 +69,11 @@ public class SuperPermuter {
                         minMergeCount++;
                     }
                     String finalSoFar = soFar;
+                    int finalMinMergeCount = minMergeCount;
                     getMoves(soFar, i)
                             .parallelStream()
                             .filter(m1 -> !usedCols.contains(m1.getRowCol().getCol()))
-                            .forEach(move -> recursePathFindOptimizedMaxMinMerge(finalSoFar, move, new ArrayList<>(usedCols)));
+                            .forEach(move -> recursePathFindOptimizedMaxMinMerge(finalSoFar, move, new ArrayList<>(usedCols), finalMinMergeCount));
                 }
             } else {
                 outputNewSuperOrSkip(soFar);

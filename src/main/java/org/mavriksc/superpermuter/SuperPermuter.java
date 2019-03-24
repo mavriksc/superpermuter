@@ -14,8 +14,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,9 +25,11 @@ import static java.util.Arrays.asList;
 
 public class SuperPermuter {
 
-    private static List<String> source = asList("A", "B", "C", "D", "E");
+    private static List<String> source = asList("A", "B", "C", "D", "E", "F");
     private static int N = source.size();
     private static Map<String, RowCol> lookup = new HashMap<>();
+    private static Map<String,Set<Integer>> comboLookup = new HashMap<>();
+    private static Map<Integer,List<String>> permuterLookup = new HashMap<>();
     private static int COLS = 0;
     private static String[][] permutations = permutationsViaRotation(source);
     private static int maxOverlap = Math.max(N - 2, 1);
@@ -34,12 +38,12 @@ public class SuperPermuter {
 
     public static void main(String[] args) {
         outputPerm2DArray(permutations);
-        List<Integer> usedCols = new ArrayList<>();
-        recursePathFindOptimizedMaxMinMerge("", new Move(new RowCol(0, 0), 0), usedCols, 0);
+        Set<Integer> usedCols = new HashSet<>();
+        recursePathFindOptimizedMaxMinMerge("", new Move(new RowCol(0, 0), 0,0), usedCols, 0);
     }
 
 
-    private static void recursePathFind(String soFar, Move m, List<Integer> usedCols) {
+    private static void recursePathFind(String soFar, Move m, Set<Integer> usedCols) {
         usedCols.add(m.getRowCol().getCol());
         soFar += stringToAppendColAtRowWithOverlap(m.getRowCol(), m.getOverlap());
         if (usedCols.size() < permutations[0].length) {
@@ -49,17 +53,17 @@ public class SuperPermuter {
                 getMoves(soFar, i)
                         .parallelStream()
                         .filter(m1 -> !usedCols.contains(m1.getRowCol().getCol()))
-                        .forEach(move -> recursePathFind(finalSoFar, move, new ArrayList<>(usedCols)));
+                        .forEach(move -> recursePathFind(finalSoFar, move, new HashSet<>(usedCols)));
             }
         } else {
             outputNewSuperOrSkip(soFar);
         }
     }
 
-    private static void recursePathFindOptimizedMaxMinMerge(String soFar, Move m, List<Integer> usedCols, int minMergeCount) {
+    private static void recursePathFindOptimizedMaxMinMerge(String soFar, Move m, Set<Integer> usedCols, int minMergeCount) {
         usedCols.add(m.getRowCol().getCol());
         soFar += stringToAppendColAtRowWithOverlap(m.getRowCol(), m.getOverlap());
-        if (minMergeCount <= 3) {
+        if (minMergeCount <= 15) {
             //possible to still beat current record.
             //else : do nothing quit wasting time end search on this branch.
             if (usedCols.size() < permutations[0].length) {
@@ -73,7 +77,7 @@ public class SuperPermuter {
                     getMoves(soFar, i)
                             .parallelStream()
                             .filter(m1 -> !usedCols.contains(m1.getRowCol().getCol()))
-                            .forEach(move -> recursePathFindOptimizedMaxMinMerge(finalSoFar, move, new ArrayList<>(usedCols), finalMinMergeCount));
+                            .forEach(move -> recursePathFindOptimizedMaxMinMerge(finalSoFar, move, new HashSet<>(usedCols), finalMinMergeCount));
                 }
             } else {
                 outputNewSuperOrSkip(soFar);
@@ -81,7 +85,7 @@ public class SuperPermuter {
         }
     }
 
-    private static void recursePathFindOptimized(String soFar, Move m, List<Integer> usedCols) {
+    private static void recursePathFindOptimized(String soFar, Move m, Set<Integer> usedCols) {
         usedCols.add(m.getRowCol().getCol());
         soFar += stringToAppendColAtRowWithOverlap(m.getRowCol(), m.getOverlap());
         if (soFar.length() + maxPackedRemainingLength(usedCols) <= minSuperLen) {
@@ -94,7 +98,7 @@ public class SuperPermuter {
                     getMoves(soFar, i)
                             .parallelStream()
                             .filter(m1 -> !usedCols.contains(m1.getRowCol().getCol()))
-                            .forEach(move -> recursePathFindOptimized(finalSoFar, move, new ArrayList<>(usedCols)));
+                            .forEach(move -> recursePathFindOptimized(finalSoFar, move, new HashSet<>(usedCols)));
                 }
             } else {
                 outputNewSuperOrSkip(soFar);
@@ -113,7 +117,7 @@ public class SuperPermuter {
         }
     }
 
-    private static int maxPackedRemainingLength(List<Integer> usedCols) {
+    private static int maxPackedRemainingLength(Set<Integer> usedCols) {
         int unusedCols = permutations[0].length - usedCols.size();
         int maxPackColLen = N + N - 1;
         // try to set bounds but this is fuzzy
@@ -134,32 +138,40 @@ public class SuperPermuter {
         String end = current.substring(current.length() - N);
         String pre = end.substring(N - overlap);
         String tail = end.substring(0, N - overlap);
-        return returnPermutations(tail).stream().filter(s -> !s.equals(tail)).map(ts -> new Move(lookup.get(pre + ts), overlap))
+        return returnPermutations(tail)
+                .stream()
+                .filter(s -> !s.equals(tail))
+                .map(ts -> new Move(lookup.get(pre + ts), overlap,0))
                 .collect(Collectors.toList());
     }
+
 
     private static String stringToAppendColAtRowWithOverlap(RowCol rc, int overlap) {
         return (permutations[rc.getRow()][rc.getCol()] + permutations[(rc.getRow() + 1) % N][rc.getCol()].substring(1)).substring(overlap);
     }
 
-    public static List<String> returnPermutations(String s) {
+    static List<String> returnPermutations(String s) {
         return returnPermutations(Arrays.asList(s.split("")), s.length(), 0);
     }
 
     private static List<String> returnPermutations(List<String> source, int choose, int len) {
-        List<String> result = new ArrayList<>();
+        int key = comboValue(source);
+        if (!permuterLookup.containsKey(key)) {
+            List<String> result = new ArrayList<>();
 
-        if (len + 1 == choose) {
-            return source;
-        } else {
-            for (String s : source) {
-                List<String> tail = new ArrayList<>(source);
-                tail.remove(s);
-                result.addAll(returnPermutations(tail, choose, len + 1).stream().map(ts -> s + ts)
-                        .collect(Collectors.toList()));
+            if (len + 1 == choose) {
+                return source;
+            } else {
+                for (String s : source) {
+                    List<String> tail = new ArrayList<>(source);
+                    tail.remove(s);
+                    result.addAll(returnPermutations(tail, choose, len + 1).stream().map(ts -> s + ts)
+                            .collect(Collectors.toList()));
+                }
+                permuterLookup.put(key,result);
             }
-            return result;
         }
+        return permuterLookup.get(key);
     }
 
     private static String[][] permutationsViaRotation(List<String> source) {
@@ -175,9 +187,20 @@ public class SuperPermuter {
             for (int j = 0; j < row1.size(); j++) {
                 perms[i][j] = i == 0 ? row1.get(j) : rotateStringRight(perms[i - 1][j]);
                 lookup.put(perms[i][j], new RowCol(i, j));
+                putStuffInComboMap(perms[i][j],j);
             }
         }
         return perms;
+    }
+
+    private static void putStuffInComboMap(String s,Integer col){
+        for (int i = 2; i <N-3 ; i++) {
+            String key = s.substring(0,i);
+            if (!comboLookup.containsKey(key)){
+                comboLookup.put(key,new HashSet<>());
+            }
+            comboLookup.get(key).add(col);
+        }
     }
 
     private static String rotateStringLeft(String s) {
@@ -213,5 +236,13 @@ public class SuperPermuter {
 
     private static String reverse(String s) {
         return new StringBuilder(s).reverse().toString();
+    }
+
+    private static int comboValue(List<String> s){
+        return s.stream().mapToInt(SuperPermuter::twoPowerLetterHash).sum();
+    }
+
+    private static int twoPowerLetterHash(String s){
+        return (int) Math.pow(2,source.indexOf(s));
     }
 }

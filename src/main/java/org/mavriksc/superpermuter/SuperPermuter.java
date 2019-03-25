@@ -26,7 +26,7 @@ import static java.util.Arrays.asList;
 
 public class SuperPermuter {
 
-    private static List<String> source = asList("A", "B", "C", "D", "E", "F");
+    private static List<String> source = asList("A", "B", "C", "D", "E"/*, "F"*/);
     private static int N = source.size();
     private static Map<String, RowCol> lookup = new HashMap<>();
     private static Map<String, Set<Integer>> comboLookup = new HashMap<>();
@@ -147,9 +147,16 @@ public class SuperPermuter {
     }
 
     private static int calcComboFactor(String s, int overlap, Set<Integer> usedCols) {
-        Set<Integer> homes = comboLookup.get(s.substring(0, overlap + 2));
-        homes.removeAll(usedCols);
-        return homes.size();
+        if (overlap == maxOverlap) {
+            return 999;
+        } else if (overlap == 1) {
+            return 1;
+        } else {
+            String key = s.substring(0, overlap);
+            Set<Integer> homes = new HashSet<>(comboLookup.get(key));
+            homes.removeAll(usedCols);
+            return homes.size();
+        }
     }
 
 
@@ -201,7 +208,7 @@ public class SuperPermuter {
     }
 
     private static void putStuffInComboMap(String s, Integer col) {
-        for (int i = 2; i < N - 3; i++) {
+        for (int i = 2; i <= N - 3; i++) {
             String key = s.substring(0, i);
             if (!comboLookup.containsKey(key)) {
                 comboLookup.put(key, new HashSet<>());

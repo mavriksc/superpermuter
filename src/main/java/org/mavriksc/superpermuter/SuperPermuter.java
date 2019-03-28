@@ -64,7 +64,7 @@ public class SuperPermuter {
     private static void recursePathFindOptimizedMaxMinMerge(String soFar, Move m, Set<Integer> usedCols, int minMergeCount) {
         usedCols.add(m.getRowCol().getCol());
         soFar += stringToAppendColAtRowWithOverlap(m.getRowCol(), m.getOverlap());
-        if (minMergeCount <= 15) {
+        if (minMergeCount <= 3) {
             //possible to still beat current record.
             //else : do nothing quit wasting time end search on this branch.
             if (usedCols.size() < permutations[0].length) {
@@ -143,7 +143,8 @@ public class SuperPermuter {
                 .stream()
                 .filter(s -> !s.equals(tail))
                 .map(ts -> new Move(lookup.get(pre + ts), overlap, calcComboFactor(pre + ts, overlap, usedCols)))
-                .sorted(Comparator.comparingInt(Move::getFreshComboFactor).reversed()).collect(Collectors.toList());
+                //.sorted(Comparator.comparingInt(Move::getFreshComboFactor).reversed())
+                .collect(Collectors.toList());
     }
 
     private static int calcComboFactor(String s, int overlap, Set<Integer> usedCols) {

@@ -3,13 +3,8 @@ package org.mavriksc.superpermuter;
 import org.mavriksc.superpermuter.type.Move;
 import org.mavriksc.superpermuter.type.RowCol;
 import org.mavriksc.superpermuter.util.FileWriter;
+import org.mavriksc.superpermuter.util.MyMath;
 
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,13 +24,20 @@ public class SuperPermuter {
     private static int COLS = 0;
     private static String[][] permutations = permutationsViaRotation(source);
     private static int maxOverlap = Math.max(N - 2, 1);
-    private static int minSuperLen = Integer.MAX_VALUE;
+    private static int minSuperLen = maxLenGivenAlg();
 
 
     public static void main(String[] args) {
         outputPerm2DArray(permutations);
+        System.out.println(maxPackedRemainingLength(Collections.emptyList()));
+        System.out.println(minSuperLen);
         List<Integer> usedCols = new ArrayList<>();
-        recursePathFindOptimizedMaxMinMerge("", new Move(new RowCol(0, 0), 0), usedCols, 0);
+        recursePathFindOptimized("", new Move(new RowCol(0, 0), 0), usedCols);
+    }
+
+    private static int maxLenGivenAlg() {
+        int nMinusOneFact = MyMath.factorial(N - 1);
+        return (2 * N - 1) + (2 * N - 2) * (nMinusOneFact - 1);
     }
 
 
@@ -115,11 +117,10 @@ public class SuperPermuter {
 
     private static int maxPackedRemainingLength(List<Integer> usedCols) {
         int unusedCols = permutations[0].length - usedCols.size();
-        int maxPackColLen = N + N - 1;
-        // try to set bounds but this is fuzzy
-        int overlapGuestimate = maxOverlap < 2 ? maxOverlap : 2;
-        int overlapOffset = 15;
-        return (maxPackColLen + (maxPackColLen - overlapGuestimate) * (unusedCols - 1)) - overlapOffset;
+        int len = (N + 1) * (unusedCols - 1);
+        if (usedCols.size() == 0)
+            len = len + (2 * N - 1);
+        return len;
     }
 
     private static void saveSuper(String superPermutationMF) {

@@ -27,3 +27,4 @@ gradle-app.setting
 /5 - weird-opt/*.txt
 /5/*.txt
 /6/*.txt
+/*.iml

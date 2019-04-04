@@ -162,12 +162,39 @@ public class SuperPermuter {
         }
     }
 
+    private static List<String> permutationsViaRoation(String source){
+        List<String> perms = new ArrayList<>();
+        if (source.length()==1){
+            perms.add(source);
+            return  perms;
+        }else {
+            String prefix = source.substring(0,1);
+            List<String> tails = permutationsViaRoation(source.substring(1, source.length()));
+            tails.forEach(t->{
+                String toRot = prefix+t;
+                perms.add(toRot);
+                for (int i = 0; i < source.length()-1; i++) {
+                    toRot=rotateStringRight(toRot);
+                    perms.add(toRot);
+                }
+            });
+            return perms;
+        }
+    }
+
+    private static String charListToString(List<String> source){
+        StringBuilder sb = new StringBuilder();
+        source.forEach(sb::append);
+        return sb.toString();
+    }
+
     private static String[][] permutationsViaRotation(List<String> source) {
         List<String> permuteThis = new ArrayList<>(source);
         String one = permuteThis.get(0);
         permuteThis.remove(one);
-        List<String> row1 = returnPermutations(permuteThis, N - 1, 0).stream().map(ts -> one + ts)
-                .collect(Collectors.toList());
+//        List<String> row1 = returnPermutations(permuteThis, N - 1, 0).stream().map(ts -> one + ts)
+//                .collect(Collectors.toList());
+        List<String> row1 = permutationsViaRoation(charListToString(permuteThis)).stream().map(ts -> one + ts).collect(Collectors.toList());
 
         String[][] perms = new String[N][row1.size()];
 

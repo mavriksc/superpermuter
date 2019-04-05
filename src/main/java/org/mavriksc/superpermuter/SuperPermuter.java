@@ -19,7 +19,7 @@ import static java.util.Arrays.asList;
 public class SuperPermuter {
 
     private static List<String> source = asList("A", "B", "C", "D", "E");
-    private static Map<String, Integer>  indexMap = getIndexMap();
+    private static Map<String, Integer> indexMap = getIndexMap();
     private static Map<String, Integer> comboHash = new HashMap<>();
     private static Map<Integer, List<String>> permCache = new HashMap<>();
     private static int N = source.size();
@@ -56,7 +56,7 @@ public class SuperPermuter {
                         .forEach(move -> recursePathFind(finalSoFar, move, new ArrayList<>(usedCols)));
             }
         } else {
-            outputNewSuperOrSkip(soFar,usedCols);
+            outputNewSuperOrSkip(soFar, usedCols);
         }
     }
 
@@ -80,7 +80,7 @@ public class SuperPermuter {
                             .forEach(move -> recursePathFindOptimizedMaxMinMerge(finalSoFar, move, new ArrayList<>(usedCols), finalMinMergeCount));
                 }
             } else {
-                outputNewSuperOrSkip(soFar,usedCols);
+                outputNewSuperOrSkip(soFar, usedCols);
             }
         }
     }
@@ -101,24 +101,24 @@ public class SuperPermuter {
                             .forEach(move -> recursePathFindOptimized(finalSoFar, move, new ArrayList<>(usedCols)));
                 }
             } else {
-                outputNewSuperOrSkip(soFar,usedCols);
+                outputNewSuperOrSkip(soFar, usedCols);
             }
         }
     }
 
-    private static void outputNewSuperOrSkip(String soFar,List<Integer> usedCols) {
+    private static void outputNewSuperOrSkip(String soFar, List<Integer> usedCols) {
         if (soFar.length() <= minSuperLen) {
             if (soFar.length() < minSuperLen) {
-            System.out.println("Found new BEST !!!\n\t" + soFar.length() + " - " + soFar);
-            minSuperLen = soFar.length();
+                System.out.println("Found new BEST !!!\n\t" + soFar.length() + " - " + soFar);
+                minSuperLen = soFar.length();
             } else {
                 System.out.println("Found new TIE!!!\n\t" + soFar.length() + " - " + soFar);
             }
             StringBuilder sb = new StringBuilder();
-            usedCols.forEach(i->sb.append(i).append("-"));
+            usedCols.forEach(i -> sb.append(i).append("-"));
             System.out.println(sb.toString());
 
-            saveSuper(soFar);
+            saveSuper(soFar, sb.toString());
         }
     }
 
@@ -130,11 +130,11 @@ public class SuperPermuter {
         return len;
     }
 
-    private static void saveSuper(String superPermutationMF) {
+    private static void saveSuper(String superPermutationMF, String colPattern) {
 
         String path = "./" + N;
         String fileName = "" + superPermutationMF.length() + "-" + UUID.randomUUID() + ".txt";
-        FileWriter.write(path, fileName, Collections.singletonList(superPermutationMF));
+        FileWriter.write(path, fileName, Arrays.asList(superPermutationMF, colPattern));
 
     }
 
@@ -150,28 +150,29 @@ public class SuperPermuter {
         return (permutations[rc.getRow()][rc.getCol()] + permutations[(rc.getRow() + 1) % N][rc.getCol()].substring(1)).substring(overlap);
     }
 
-    static List<String> permutationsViaRotation(String source){
-        return permCache.computeIfAbsent(stringHashVal(source),s->{
+    static List<String> permutationsViaRotation(String source) {
+        return permCache.computeIfAbsent(stringHashVal(source), s -> {
             List<String> perms = new ArrayList<>();
-            if (source.length()==1){
+            if (source.length() == 1) {
                 perms.add(source);
-                return  perms;
-            }else {
-                String prefix = source.substring(0,1);
+                return perms;
+            } else {
+                String prefix = source.substring(0, 1);
                 List<String> tails = permutationsViaRotation(source.substring(1, source.length()));
-                tails.forEach(t->{
-                    String toRot = prefix+t;
+                tails.forEach(t -> {
+                    String toRot = prefix + t;
                     perms.add(toRot);
-                    for (int i = 0; i < source.length()-1; i++) {
-                        toRot=rotateStringRight(toRot);
+                    for (int i = 0; i < source.length() - 1; i++) {
+                        toRot = rotateStringRight(toRot);
                         perms.add(toRot);
                     }
                 });
                 return perms;
-            }});
+            }
+        });
     }
 
-    private static String charListToString(List<String> source){
+    private static String charListToString(List<String> source) {
         StringBuilder sb = new StringBuilder();
         source.forEach(sb::append);
         return sb.toString();
@@ -229,19 +230,19 @@ public class SuperPermuter {
         return new StringBuilder(s).reverse().toString();
     }
 
-    private static int stringHashVal(String s){
-        return comboHash.computeIfAbsent(s,string->{
-            int hash=0;
+    private static int stringHashVal(String s) {
+        return comboHash.computeIfAbsent(s, string -> {
+            int hash = 0;
             for (String s1 : s.split("")) {
-                hash+=(int) Math.pow(2,indexMap.get(s1));
+                hash += (int) Math.pow(2, indexMap.get(s1));
             }
             return hash;
         });
     }
 
     private static Map<String, Integer> getIndexMap() {
-        Map<String,Integer> map = new HashMap<>();
-        source.forEach(s->map.put(s,source.indexOf(s)));
+        Map<String, Integer> map = new HashMap<>();
+        source.forEach(s -> map.put(s, source.indexOf(s)));
         return map;
     }
 }

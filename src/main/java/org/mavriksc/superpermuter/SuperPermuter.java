@@ -56,7 +56,7 @@ public class SuperPermuter {
                         .forEach(move -> recursePathFind(finalSoFar, move, new ArrayList<>(usedCols)));
             }
         } else {
-            outputNewSuperOrSkip(soFar);
+            outputNewSuperOrSkip(soFar,usedCols);
         }
     }
 
@@ -80,7 +80,7 @@ public class SuperPermuter {
                             .forEach(move -> recursePathFindOptimizedMaxMinMerge(finalSoFar, move, new ArrayList<>(usedCols), finalMinMergeCount));
                 }
             } else {
-                outputNewSuperOrSkip(soFar);
+                outputNewSuperOrSkip(soFar,usedCols);
             }
         }
     }
@@ -101,18 +101,23 @@ public class SuperPermuter {
                             .forEach(move -> recursePathFindOptimized(finalSoFar, move, new ArrayList<>(usedCols)));
                 }
             } else {
-                outputNewSuperOrSkip(soFar);
+                outputNewSuperOrSkip(soFar,usedCols);
             }
         }
     }
 
-    private static void outputNewSuperOrSkip(String soFar) {
-        if (soFar.length() < minSuperLen) {
+    private static void outputNewSuperOrSkip(String soFar,List<Integer> usedCols) {
+        if (soFar.length() <= minSuperLen) {
+            if (soFar.length() < minSuperLen) {
             System.out.println("Found new BEST !!!\n\t" + soFar.length() + " - " + soFar);
             minSuperLen = soFar.length();
-            saveSuper(soFar);
-        } else if (soFar.length() <= minSuperLen) {
-            System.out.println("Found new TIE!!!\n\t" + soFar.length() + " - " + soFar);
+            } else {
+                System.out.println("Found new TIE!!!\n\t" + soFar.length() + " - " + soFar);
+            }
+            StringBuilder sb = new StringBuilder();
+            usedCols.forEach(i->sb.append(i).append("-"));
+            System.out.println(sb.toString());
+
             saveSuper(soFar);
         }
     }
